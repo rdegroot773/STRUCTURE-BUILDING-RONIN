@@ -395,7 +395,9 @@ function getGBRSStatus(key,val) {
 // ─── EX ROW ──────────────────────────────────────────────────────────────────
 function ExRow({ex, weekIdx, allLogs, onSave}) {
   const logKey=`${ex.id}_w${weekIdx}`;
+  const prevKey=`${ex.id}_w${weekIdx-1}`;
   const sets=allLogs[logKey]||[];
+  const prevSets=weekIdx>0?(allLogs[prevKey]||[]):[];
   const [open,setOpen]=useState(false);
   const [wt,setWt]=useState(""); const [rp,setRp]=useState(""); const [rir,setRir]=useState("");
   const typeColor={P:MC.accentLt,A:MC.khaki,T:MC.warn,N:"#8B7AD4"};
@@ -403,6 +405,12 @@ function ExRow({ex, weekIdx, allLogs, onSave}) {
   const hasSets=sets.length>0;
   const sug=hasSets?calcSug(sets,ex.tr?.[weekIdx]||0,ex.tk?.[weekIdx]||0,ex.bp):null;
   const addSet=()=>{ if(!wt&&!rp) return; onSave(logKey,[...sets,{wt,rp,rir,id:Date.now()}]); setWt("");setRp("");setRir(""); };
+
+  // Previous week summary
+  const prevSummary = prevSets.length > 0 ? (() => {
+    const best = prevSets.reduce((a,b) => (parseFloat(b.wt)||0) > (parseFloat(a.wt)||0) ? b : a, prevSets[0]);
+    return `${prevSets.length} sets · ${best.wt?best.wt+"kg":""} × ${best.rp} reps`;
+  })() : null;
 
   return (
     <div style={{background:hasSets?`${MC.green}18`:MC.card,border:`1px solid ${hasSets?MC.green+"44":ex.type?typeColor[ex.type]+"22":MC.border}`,borderRadius:6,marginBottom:5,overflow:"hidden"}}>
@@ -413,6 +421,12 @@ function ExRow({ex, weekIdx, allLogs, onSave}) {
             {ex.type&&<span style={{fontSize:8,fontWeight:800,padding:"1px 5px",borderRadius:2,background:`${typeColor[ex.type]}22`,color:typeColor[ex.type],letterSpacing:"0.08em"}}>{typeLabel[ex.type]}</span>}
           </div>
           <div style={{fontSize:10,color:MC.accentLt,fontWeight:700,fontFamily:"monospace"}}>{ex.weeks?.[weekIdx]||"—"}</div>
+          {/* Previous week data */}
+          {prevSummary && (
+            <div style={{fontSize:9,color:MC.muted,marginTop:2,fontFamily:"monospace"}}>
+              ← vorige week: {prevSummary}
+            </div>
+          )}
           {ex.doel&&<div style={{fontSize:9,color:MC.sub,marginTop:1}}>{ex.rest&&`${ex.rest} · `}{ex.doel}</div>}
           {ex.cue&&<div style={{fontSize:9,color:MC.warn,marginTop:2}}>// {ex.cue}</div>}
           {sug&&<div style={{marginTop:6,padding:"4px 8px",background:`${sug.col}15`,border:`1px solid ${sug.col}33`,borderRadius:4}}><span style={{fontSize:9,fontWeight:700,color:sug.col,fontFamily:"monospace"}}>{sug.msg}</span></div>}
@@ -918,6 +932,10 @@ export default function App() {
 
             <button onClick={submitRetest} style={{width:"100%",background:MC.accent,border:"none",borderRadius:4,color:MC.text,padding:"12px",fontSize:11,fontWeight:800,cursor:"pointer",letterSpacing:"0.1em",fontFamily:"monospace"}}>
               // RETEST SCORES OPSLAAN
+            </button>
+
+            <button onClick={()=>{setRetestScores({});showToast("Retest gewist ✓");}} style={{marginTop:8,width:"100%",background:"transparent",border:`1px solid ${MC.border}`,borderRadius:4,color:MC.muted,padding:"10px",fontSize:10,cursor:"pointer",fontFamily:"monospace",letterSpacing:"0.08em"}}>
+              // RETEST DATA WISSEN
             </button>
           </div>
         )}
