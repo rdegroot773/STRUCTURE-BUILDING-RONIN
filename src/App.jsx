@@ -466,7 +466,147 @@ function ExRow({ex, weekIdx, allLogs, onSave}) {
   );
 }
 
-// ─── MAIN ────────────────────────────────────────────────────────────────────
+// ─── RADAR CHART ─────────────────────────────────────────────────────────────
+function RadarChart({ baseline, retest }) {
+  const size = 280;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = 110;
+  const axes = GBRS_STANDARDS;
+  const n = axes.length;
+
+  // Three tier norms per axis (standard, elite, pro)
+  const TIERS = {
+    broadJump:   { standard: 1.75, elite: 2.06, pro: 2.36 },
+    benchAmrap:  { standard: 10,   elite: 15,   pro: 20   },
+    pullups:     { standard: 10,   elite: 15,   pro: 20   },
+    trapBar5rm:  { standard: 112,  elite: 131,  pro: 150  },
+    plank:       { standard: 120,  elite: 150,  pro: 180  },
+    farmerCarry: { standard: 53,   elite: 69,   pro: 76   },
+    run800:      { standard: 195,  elite: 180,  pro: 165  },
+  };
+
+  const getScore = (key, val) => {
+    if (val == null) return 0;
+    const t = TIERS[key];
+    const std = axes.find(a => a.key === key);
+    if (!std) return 0;
+    if (std.higher) {
+      if (val >= t.pro) return 1.0;
+      if (val >= t.elite) return 0.67 + ((val - t.elite) / (t.pro - t.elite)) * 0.33;
+      if (val >= t.standard) return 0.33 + ((val - t.standard) / (t.elite - t.standard)) * 0.34;
+      return Math.max(0.05, (val / t.standard) * 0.33);
+    } else {
+      if (val <= t.pro) return 1.0;
+      if (val <= t.elite) return 0.67 + ((t.elite - val) / (t.elite - t.pro)) * 0.33;
+      if (val <= t.standard) return 0.33 + ((t.standard - val) / (t.standard - t.elite)) * 0.34;
+      return Math.max(0.05, (t.standard / val) * 0.33);
+    }
+  };
+
+  const angleOf = i => (i / n) * 2 * Math.PI - Math.PI / 2;
+
+  const point = (i, ratio) => {
+    const a = angleOf(i);
+    return { x: cx + r * ratio * Math.cos(a), y: cy + r * ratio * Math.sin(a) };
+  };
+
+  const polygon = (scores) =>
+    scores.map((s, i) => { const p = point(i, s); return `${p.x},${p.y}`; }).join(" ");
+
+  const tierRatios = [0.33, 0.67, 1.0];
+  const tierLabels = ["STANDARD", "ELITE", "BE A PRO"];
+  const tierColors = ["#2A3018", "#2D4A1E", "#3D6B2A"];
+
+  const baselineScores = axes.map(a => getScore(a.key, baseline[a.key]));
+  const retestScores   = axes.map(a => getScore(a.key, retest?.[a.key]));
+  const hasRetest      = Object.keys(retest || {}).length > 0;
+
+  return (
+    <div style={{ background: MC.card, border: `1px solid ${MC.border}`, borderRadius: 8, padding: "16px 8px", marginBottom: 16 }}>
+      <div style={{ fontSize: 9, color: MC.accentLt, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", fontFamily: "monospace", textAlign: "center", marginBottom: 12 }}>
+        // GBRS PERFORMANCE RADAR
+      </div>
+      <svg width="100%" viewBox={`0 0 ${size} ${size}`} style={{ display: "block", maxWidth: 300, margin: "0 auto" }}>
+        {/* Grid rings */}
+        {tierRatios.map((ratio, ti) => (
+          <polygon key={ti}
+            points={Array.from({length: n}, (_, i) => { const p = point(i, ratio); return `${p.x},${p.y}`; }).join(" ")}
+            fill={ti === 2 ? "#2D4A1E22" : "none"}
+            stroke={tierColors[ti]}
+            strokeWidth={ti === 2 ? 1.5 : 0.8}
+            strokeDasharray={ti < 2 ? "3,3" : "none"}
+          />
+        ))}
+
+        {/* Axes */}
+        {axes.map((_, i) => {
+          const p = point(i, 1.0);
+          return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke={MC.border} strokeWidth={0.8} />;
+        })}
+
+        {/* Baseline polygon */}
+        <polygon
+          points={polygon(baselineScores)}
+          fill="#6AAF3D22"
+          stroke="#6AAF3D"
+          strokeWidth={2}
+        />
+
+        {/* Retest polygon */}
+        {hasRetest && (
+          <polygon
+            points={polygon(retestScores)}
+            fill="#E8E0CC15"
+            stroke="#E8E0CC"
+            strokeWidth={1.5}
+            strokeDasharray="4,2"
+          />
+        )}
+
+        {/* Tier labels */}
+        {[0.33, 0.67, 1.0].map((ratio, ti) => {
+          const p = point(1, ratio);
+          return (
+            <text key={ti} x={p.x + 4} y={p.y - 2} fontSize="6" fill={tierColors[2]} fontFamily="monospace" opacity={0.8}>
+              {tierLabels[ti]}
+            </text>
+          );
+        })}
+
+        {/* Axis labels */}
+        {axes.map((ax, i) => {
+          const p = point(i, 1.18);
+          const anchor = p.x < cx - 5 ? "end" : p.x > cx + 5 ? "start" : "middle";
+          return (
+            <text key={i} x={p.x} y={p.y} fontSize="7.5" fill={MC.text} fontFamily="monospace" textAnchor={anchor} dominantBaseline="middle" fontWeight="700">
+              {ax.label.replace("Farmer's Carry", "F. Carry").replace("Bench AMRAP @ BW", "Bench").replace("Trap Bar DL 5RM", "Trap Bar")}
+            </text>
+          );
+        })}
+
+        {/* Center dot */}
+        <circle cx={cx} cy={cy} r={3} fill={MC.accentLt} />
+      </svg>
+
+      {/* Legend */}
+      <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 16, height: 2, background: MC.accentLt, borderRadius: 1 }} />
+          <span style={{ fontSize: 9, color: MC.sub, fontFamily: "monospace" }}>BASELINE</span>
+        </div>
+        {hasRetest && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 16, height: 2, background: MC.text, borderRadius: 1, opacity: 0.6 }} />
+            <span style={{ fontSize: 9, color: MC.sub, fontFamily: "monospace" }}>RETEST</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 export default function App() {
   const [store,setStore]=useState({});
   const [mainTab,setMainTab]=useState("ops");
@@ -857,9 +997,12 @@ export default function App() {
         {mainTab==="retest"&&(
           <div>
             <div style={{background:MC.surface,borderRadius:4,padding:"12px",marginBottom:14,borderLeft:`2px solid ${MC.accentLt}`}}>
-              <div style={{fontSize:9,color:MC.accentLt,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.12em",fontFamily:"monospace",marginBottom:4}}>// GBRS RETEST — WEEK 9</div>
+              <div style={{fontSize:9,color:MC.accentLt,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.12em",fontFamily:"monospace",marginBottom:4}}>// GBRS RETEST — WEEK 12</div>
               <div style={{fontSize:9,color:MC.muted}}>Vul scores in na retest. Vergelijking met baseline wordt direct getoond.</div>
             </div>
+
+            {/* Radar Chart */}
+            <RadarChart baseline={BASELINE} retest={retestScores} />
 
             {/* Scores vergelijking */}
             <SH title="// BASELINE vs RETEST"/>
