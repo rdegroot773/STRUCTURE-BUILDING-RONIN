@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 
+// Load military font
+const fontLink = document.createElement("link");
+fontLink.rel = "stylesheet";
+fontLink.href = "https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Share+Tech+Mono&display=swap";
+document.head.appendChild(fontLink);
+
 // ─── MULTICAM PALETTE ────────────────────────────────────────────────────────
 const MC = {
   // Backgrounds
@@ -8,19 +14,19 @@ const MC = {
   mid:      "#1E2314",   // darker field drab
   surface:  "#252C18",   // field drab
   // Multicam earth tones
-  tan:      "#8B7355",   // coyote tan
-  khaki:    "#6B6B47",   // dark khaki
+  tan:      "#4A7C2F",   // all green now
+  khaki:    "#4A7C2F",   // all green now
   olive:    "#4A5230",   // olive drab
   green:    "#2D4A1E",   // dark military green
   greenLt:  "#3D6B2A",   // lighter military green
-  brown:    "#5C3D1E",   // dark brown
-  sand:     "#C4A882",   // sand/light tan
-  // Accents
+  brown:    "#3D6B2A",   // green
+  sand:     "#6AAF3D",   // bright green
+  // Accents — all green
   accent:   "#4A7C2F",   // military green accent
   accentLt: "#6AAF3D",   // bright military green
-  warn:     "#C4820A",   // amber warning
-  danger:   "#8B2020",   // dark red danger
-  dangerLt: "#C42B2B",   // red
+  warn:     "#4A7C2F",   // green instead of amber
+  danger:   "#8B2020",   // dark red danger (kept for error states)
+  dangerLt: "#C42B2B",   // red (kept for error states)
   // Text
   text:     "#E8E0CC",   // warm off-white
   sub:      "#8A8570",   // muted warm grey
@@ -28,7 +34,7 @@ const MC = {
   border:   "#2A3018",   // dark olive border
   // Status
   green:    "#4A9B2F",
-  yellow:   "#C4820A",
+  yellow:   "#4A7C2F",   // green instead of yellow
   red:      "#C42B2B",
 };
 
@@ -56,11 +62,11 @@ const SESSIONS_B1 = {
       {name:"Tib Raise (grond)",sets:"2×15",cue:"Dorsaalflexie activatie"},
     ],
     exercises:[
-      {id:"A_zercher",   name:"Zercher Squat",       type:"P",bp:"lower",weeks:["4×6 @ 105kg RIR3","4×6 @ 109kg RIR2","5×5 @ 115kg RIR2"],tr:[6,6,5],tk:[105,109,115],rest:"2:30",doel:"Max kracht fundament"},
-      {id:"A_trapbar",   name:"Trap Bar Deadlift",    type:"P",bp:"lower",weeks:["4×5 @ 105kg RIR3","4×5 @ 112kg RIR2","4×5 @ 119kg RIR1"],tr:[5,5,5],tk:[105,112,119],rest:"2:30",doel:"GBRS 5RM gap"},
-      {id:"A_sandbag",   name:"Sandbag Squat",        type:"A",bp:"lower",weeks:["3×10 @ 60kg RIR2","3×10 @ 70kg RIR2","3×8 @ 80kg RIR2"],tr:[10,10,8],tk:[60,70,80],rest:"90s",doel:"Functionele hypertrofie"},
-      {id:"A_hip",       name:"Hip Thruster Machine", type:"A",bp:"lower",weeks:["3×12 RIR2","3×12 RIR1-2","4×10 RIR1-2"],tr:[12,12,10],tk:[0,0,0],rest:"75s",doel:"Glute dominant"},
-      {id:"A_singleleg", name:"Single Leg Press",     type:"A",bp:"lower",weeks:["3×10/been RIR2","3×10/been RIR2","3×10/been RIR1"],tr:[10,10,10],tk:[0,0,0],rest:"60s",doel:"Asymmetrie correctie"},
+      {id:"A_zercher",   name:"Zercher Squat",       type:"P",bp:"lower",weeks:["4×6 @ 105kg RIR3","4×6 @ 109kg RIR2","5×5 @ 115kg RIR2","3×5 @ 95kg RIR4 — DELOAD"],tr:[6,6,5,5],tk:[105,109,115,95],rest:"2:30",doel:"Max kracht fundament"},
+      {id:"A_trapbar",   name:"Trap Bar Deadlift",    type:"P",bp:"lower",weeks:["4×5 @ 105kg RIR3","4×5 @ 112kg RIR2","4×5 @ 119kg RIR1","3×4 @ 95kg RIR4 — DELOAD"],tr:[5,5,5,4],tk:[105,112,119,95],rest:"2:30",doel:"GBRS 5RM gap"},
+      {id:"A_sandbag",   name:"Sandbag Squat",        type:"A",bp:"lower",weeks:["3×10 @ 60kg RIR2","3×10 @ 70kg RIR2","3×8 @ 80kg RIR2","2×8 @ 55kg RIR4 — DELOAD"],tr:[10,10,8,8],tk:[60,70,80,55],rest:"90s",doel:"Functionele hypertrofie"},
+      {id:"A_hip",       name:"Hip Thruster Machine", type:"A",bp:"lower",weeks:["3×12 RIR2","3×12 RIR1-2","4×10 RIR1-2","2×10 RIR4 — DELOAD"],tr:[12,12,10,10],tk:[0,0,0,0],rest:"75s",doel:"Glute dominant"},
+      {id:"A_singleleg", name:"Single Leg Press",     type:"A",bp:"lower",weeks:["3×10/been RIR2","3×10/been RIR2","3×10/been RIR1","2×8/been RIR4 — DELOAD"],tr:[10,10,10,8],tk:[0,0,0,0],rest:"60s",doel:"Asymmetrie correctie"},
     ],
     conditioning:[
       {name:"Sled Push (10m)",weeks:["6×10m / 60s","8×10m / 45s","10×10m / 45s"]},
@@ -78,12 +84,12 @@ const SESSIONS_B1 = {
       {name:"Enkel Dorsaalflexie",sets:"2×10/zij",cue:"Knie over teen"},
     ],
     exercises:[
-      {id:"B_bench",   name:"Flat Bench Press ★",    type:"P",bp:"upper",weeks:["4×8 @ 55kg RIR3","4×8 @ 60kg RIR2","5×6 @ 64kg RIR1-2"],tr:[8,8,6],tk:[55,60,64],rest:"2:30",doel:"GBRS AMRAP >20"},
-      {id:"B_incline", name:"Incline DB Press",       type:"A",bp:"upper",weeks:["3×10 RIR2","3×10 RIR2","4×8 RIR2"],tr:[10,10,8],tk:[0,0,0],rest:"90s",doel:"Anterieur delt"},
-      {id:"B_pullup",  name:"Pull-ups (strict) ★",   type:"P",bp:"upper",weeks:["4×6 RIR2-3","5×6 RIR2","5×6-8 max ls"],tr:[6,6,8],tk:[0,0,0],rest:"90s",doel:"GBRS >20 gap"},
-      {id:"B_pulldown",name:"Lat Pulldown",           type:"A",bp:"upper",weeks:["3×10 RIR2","3×10 RIR2","3×10 RIR1-2"],tr:[10,10,10],tk:[0,0,0],rest:"75s",doel:"Volume suppl."},
-      {id:"B_lateral", name:"DB Lateral Raise",       type:"A",bp:"upper",weeks:["3×15 RIR1","3×15 RIR1","3×15 RIR1"],tr:[15,15,15],tk:[0,0,0],rest:"45s",doel:"Laterale deltoid"},
-      {id:"B_tricep",  name:"Tricep Pushdown / Dips", type:"A",bp:"upper",weeks:["3×12 RIR2","3×12 RIR2","3×10 RIR1-2"],tr:[12,12,10],tk:[0,0,0],rest:"60s",doel:"Bench lockout"},
+      {id:"B_bench",   name:"Flat Bench Press ★",    type:"P",bp:"upper",weeks:["4×8 @ 55kg RIR3","4×8 @ 60kg RIR2","5×6 @ 64kg RIR1-2","3×6 @ 50kg RIR4 — DELOAD"],tr:[8,8,6,6],tk:[55,60,64,50],rest:"2:30",doel:"GBRS AMRAP >20"},
+      {id:"B_incline", name:"Incline DB Press",       type:"A",bp:"upper",weeks:["3×10 RIR2","3×10 RIR2","4×8 RIR2","2×8 RIR4 — DELOAD"],tr:[10,10,8,8],tk:[0,0,0,0],rest:"90s",doel:"Anterieur delt"},
+      {id:"B_pullup",  name:"Pull-ups (strict) ★",   type:"P",bp:"upper",weeks:["4×6 RIR2-3","5×6 RIR2","5×6-8 max ls","3×5 RIR4 — DELOAD"],tr:[6,6,8,5],tk:[0,0,0,0],rest:"90s",doel:"GBRS >20 gap"},
+      {id:"B_pulldown",name:"Lat Pulldown",           type:"A",bp:"upper",weeks:["3×10 RIR2","3×10 RIR2","3×10 RIR1-2","2×8 RIR4 — DELOAD"],tr:[10,10,10,8],tk:[0,0,0,0],rest:"75s",doel:"Volume suppl."},
+      {id:"B_lateral", name:"DB Lateral Raise",       type:"A",bp:"upper",weeks:["3×15 RIR1","3×15 RIR1","3×15 RIR1","2×12 RIR4 — DELOAD"],tr:[15,15,15,12],tk:[0,0,0,0],rest:"45s",doel:"Laterale deltoid"},
+      {id:"B_tricep",  name:"Tricep Pushdown / Dips", type:"A",bp:"upper",weeks:["3×12 RIR2","3×12 RIR2","3×10 RIR1-2","2×10 RIR4 — DELOAD"],tr:[12,12,10,10],tk:[0,0,0,0],rest:"60s",doel:"Bench lockout"},
     ],
     conditioning:[{name:"Roeier 30s @85% / 90s herstel",weeks:["6 rondes","8 rondes","10 rondes"]}],
     cooldown:[{name:"Pec Minor Stretch",sets:"4×45s"},{name:"Neck Series",sets:"4×30s/richting"},{name:"Breath & Flow",sets:"10 min"}],
@@ -107,12 +113,12 @@ const SESSIONS_B1 = {
       {name:"Tib Raise (grond)",sets:"2×15",cue:"Enkel activatie"},
     ],
     exercises:[
-      {id:"C_row",        name:"Barbell Row",          type:"P",bp:"upper",weeks:["4×8 @ 55kg RIR2","4×8 @ 60kg RIR2","4×8 @ 62kg RIR1-2"],tr:[8,8,8],tk:[55,60,62],rest:"90s",doel:"Rug massa"},
-      {id:"C_pullup",     name:"Pull-ups (variatie)",  type:"P",bp:"upper",weeks:["4×6 RIR2","4×6 +5kg>8 RIR2","4×max cluster"],tr:[6,6,8],tk:[0,0,0],rest:"90s",doel:"Pull-up volume"},
-      {id:"C_goodmorning",name:"Zercher Good Morning", type:"A",bp:"lower",weeks:["3×10 @ 50kg RIR3","3×10 @ 60kg RIR2","3×10 @ 65kg RIR2"],tr:[10,10,10],tk:[50,60,65],rest:"90s",doel:"Posterior chain"},
-      {id:"C_farmer",     name:"Farmer's Carry ★",     type:"P",bp:"lower",weeks:["4×40m @ 60kg","4×50m @ 65kg","4×60m @ 70kg"],tr:[4,4,4],tk:[60,65,70],rest:"60s",doel:"GBRS carry >76m"},
-      {id:"C_facepull2",  name:"Face Pull / Rear Delt",type:"A",bp:"upper",weeks:["3×15 RIR1","3×15 RIR1","3×15 RIR1"],tr:[15,15,15],tk:[0,0,0],rest:"45s",doel:"Rotator cuff"},
-      {id:"C_curl",       name:"EZ-bar Curl",           type:"A",bp:"upper",weeks:["3×10 RIR2","3×10 RIR2","3×10 RIR1-2"],tr:[10,10,10],tk:[0,0,0],rest:"60s",doel:"Bicep massa"},
+      {id:"C_row",        name:"Barbell Row",          type:"P",bp:"upper",weeks:["4×8 @ 55kg RIR2","4×8 @ 60kg RIR2","4×8 @ 62kg RIR1-2","3×6 @ 50kg RIR4 — DELOAD"],tr:[8,8,8,6],tk:[55,60,62,50],rest:"90s",doel:"Rug massa"},
+      {id:"C_pullup",     name:"Pull-ups (variatie)",  type:"P",bp:"upper",weeks:["4×6 RIR2","4×6 +5kg>8 RIR2","4×max cluster","3×5 RIR4 — DELOAD"],tr:[6,6,8,5],tk:[0,0,0,0],rest:"90s",doel:"Pull-up volume"},
+      {id:"C_goodmorning",name:"Zercher Good Morning", type:"A",bp:"lower",weeks:["3×10 @ 50kg RIR3","3×10 @ 60kg RIR2","3×10 @ 65kg RIR2","2×8 @ 45kg RIR4 — DELOAD"],tr:[10,10,10,8],tk:[50,60,65,45],rest:"90s",doel:"Posterior chain"},
+      {id:"C_farmer",     name:"Farmer's Carry ★",     type:"P",bp:"lower",weeks:["4×40m @ 60kg","4×50m @ 65kg","4×60m @ 70kg","3×30m @ 55kg — DELOAD"],tr:[4,4,4,3],tk:[60,65,70,55],rest:"60s",doel:"GBRS carry >76m"},
+      {id:"C_facepull2",  name:"Face Pull / Rear Delt",type:"A",bp:"upper",weeks:["3×15 RIR1","3×15 RIR1","3×15 RIR1","2×12 RIR4 — DELOAD"],tr:[15,15,15,12],tk:[0,0,0,0],rest:"45s",doel:"Rotator cuff"},
+      {id:"C_curl",       name:"EZ-bar Curl",           type:"A",bp:"upper",weeks:["3×10 RIR2","3×10 RIR2","3×10 RIR1-2","2×8 RIR4 — DELOAD"],tr:[10,10,10,8],tk:[0,0,0,0],rest:"60s",doel:"Bicep massa"},
     ],
     conditioning:[{name:"Sled Pull 10m → Airbike 15s",weeks:["5 rondes / 75s","6 rondes / 75s","8 rondes / 75s"]}],
     cooldown:[{name:"Thoracale extensie mob.",sets:"2×10"},{name:"Lat Stretch",sets:"3×30s"},{name:"Breath & Flow",sets:"10 min"}],
@@ -327,7 +333,7 @@ const PREHAB = [
 ];
 
 const BLOCKS = [
-  {id:"b1", label:"BLOK 1", sub:"Work Capacity · Hypertrofie", weeks:"Wk 2-4", color: MC.accent, sessions: SESSIONS_B1, weekPlan:[
+  {id:"b1", label:"BLOK 1", sub:"Work Capacity · Hypertrofie", weeks:"Wk 1-4", color: MC.accent, sessions: SESSIONS_B1, weekPlan:[
     {day:"Ma",label:"Sessie A",sub:"Lower Body",key:"A",color:MC.accent},
     {day:"Di",label:"MMA",sub:"Techniek + sparren",key:null,color:MC.muted},
     {day:"Wo",label:"Sessie B",sub:"Upper Push + Trap/Nek",key:"B",color:MC.accent},
@@ -336,7 +342,7 @@ const BLOCKS = [
     {day:"Za",label:"Sessie D",sub:"MMA Conditioning + Trap/Nek",key:"D",color:MC.warn},
     {day:"Zo",label:"Rust",sub:"Restoratief",key:null,color:MC.green},
   ]},
-  {id:"b2", label:"BLOK 2", sub:"Max Strength", weeks:"Wk 5-7", color: MC.tan, sessions: SESSIONS_B2, weekPlan:[
+  {id:"b2", label:"BLOK 2", sub:"Max Strength", weeks:"Wk 5-8", color: MC.accent, sessions: SESSIONS_B2, weekPlan:[
     {day:"Ma",label:"Sessie E",sub:"Max Kracht Lower",key:"E",color:MC.tan},
     {day:"Di",label:"MMA",sub:"Techniek + sparren",key:null,color:MC.muted},
     {day:"Wo",label:"Sessie F",sub:"Max Kracht Upper + Trap/Nek",key:"F",color:MC.tan},
@@ -345,7 +351,7 @@ const BLOCKS = [
     {day:"Za",label:"Sessie H",sub:"MMA Conditioning + Trap/Nek",key:"H",color:MC.warn},
     {day:"Zo",label:"Rust",sub:"Restoratief",key:null,color:MC.green},
   ]},
-  {id:"b3", label:"BLOK 3", sub:"Power · Peak · Retest", weeks:"Wk 8-9", color: MC.sand, sessions: SESSIONS_B3, weekPlan:[
+  {id:"b3", label:"BLOK 3", sub:"Power · Peak · Retest", weeks:"Wk 9-12", color: MC.accent, sessions: SESSIONS_B3, weekPlan:[
     {day:"Ma",label:"Sessie I",sub:"Power + PAP Lower",key:"I",color:MC.sand},
     {day:"Di",label:"MMA",sub:"Techniek + sparren",key:null,color:MC.muted},
     {day:"Wo",label:"Sessie J",sub:"Power + PAP Upper + Trap/Nek",key:"J",color:MC.sand},
@@ -531,8 +537,8 @@ export default function App() {
   const pct=allExIds.length?Math.round((doneCnt/allExIds.length)*100):0;
   const prehabDone=Object.values(prehabChecks).filter(Boolean).length;
 
-  const WEEK_LABELS=["Week 1","Week 2","Week 3"];
-  const WEEK_BLOCK_LABELS={b1:["Week 2","Week 3","Week 4"],b2:["Week 5","Week 6","Week 7"],b3:["Week 8","Week 9","Peakweek"]};
+  const WEEK_LABELS=["Week 1","Week 2","Week 3","Week 4"];
+  const WEEK_BLOCK_LABELS={b1:["Week 1","Week 2","Week 3","Week 4 — Deload"],b2:["Week 5","Week 6","Week 7","Week 8 — Deload"],b3:["Week 9","Week 10","Week 11","Week 12 — Retest"]};
 
   function SH({title,sub,color}) {
     return (
@@ -555,26 +561,39 @@ export default function App() {
       <div style={{background:MC.mid,borderBottom:`1px solid ${MC.border}`,padding:"16px 16px 12px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
           <div>
-            <div style={{fontSize:18,fontWeight:900,letterSpacing:"0.08em",color:MC.text,fontFamily:"monospace"}}>
+            <div style={{fontSize:24,fontWeight:700,letterSpacing:"0.12em",color:MC.text,fontFamily:"'Oswald', sans-serif"}}>
               HARD <span style={{color:MC.accentLt}}>TO</span> KILL
             </div>
-            <div style={{fontSize:8,color:MC.khaki,textTransform:"uppercase",letterSpacing:"0.15em",marginTop:2}}>
-              KORPS MARINIERS · 8-WEEK GBRS BLOCK
+            <div style={{fontSize:9,color:MC.khaki,textTransform:"uppercase",letterSpacing:"0.2em",marginTop:2,fontFamily:"'Oswald', sans-serif"}}>
+              KORPS MARINIERS · 12-WEEK GBRS BLOCK
             </div>
           </div>
           {todayStatus&&(
             <div style={{background:`${statusInfo[todayStatus].col}18`,border:`1px solid ${statusInfo[todayStatus].col}44`,borderRadius:4,padding:"4px 10px",textAlign:"center"}}>
-              <div style={{fontSize:8,color:statusInfo[todayStatus].col,fontWeight:800,letterSpacing:"0.1em",fontFamily:"monospace"}}>HRV</div>
-              <div style={{fontSize:10,color:statusInfo[todayStatus].col,fontWeight:800,fontFamily:"monospace"}}>{statusInfo[todayStatus].label}</div>
+              <div style={{fontSize:8,color:statusInfo[todayStatus].col,fontWeight:700,letterSpacing:"0.1em",fontFamily:"'Oswald', sans-serif"}}>HRV</div>
+              <div style={{fontSize:12,color:statusInfo[todayStatus].col,fontWeight:700,fontFamily:"'Oswald', sans-serif"}}>{statusInfo[todayStatus].label}</div>
             </div>
           )}
         </div>
       </div>
 
       {/* MAIN TABS */}
-      <div style={{display:"flex",gap:4,padding:"10px 16px 0",borderBottom:`1px solid ${MC.border}`,overflowX:"auto",background:MC.mid}}>
+      <div style={{display:"flex",gap:0,padding:"0 16px",borderBottom:`1px solid ${MC.border}`,overflowX:"auto",background:MC.mid}}>
         {[["ops","OPS PLAN"],["training","TRAINING"],["prehab","PREHAB"],["hrv","HRV"],["retest","RETEST"]].map(([k,l])=>(
-          <button key={k} onClick={()=>setMainTab(k)} style={tabBtn(k,mainTab===k)}>{l}</button>
+          <button key={k} onClick={()=>setMainTab(k)} style={{
+            background:"transparent",
+            border:"none",
+            color:mainTab===k?MC.accentLt:MC.muted,
+            fontSize:13,
+            fontWeight:700,
+            cursor:"pointer",
+            padding:"14px 12px 12px",
+            borderBottom:mainTab===k?`3px solid ${MC.accentLt}`:"3px solid transparent",
+            letterSpacing:"0.12em",
+            textTransform:"uppercase",
+            flexShrink:0,
+            fontFamily:"'Oswald', sans-serif",
+          }}>{l}</button>
         ))}
       </div>
 
